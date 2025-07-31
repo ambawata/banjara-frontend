@@ -1,375 +1,220 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Banjara Bazaar - Seller Platform</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #fefce8; }
-        .hidden { display: none; }
-        .form-input { border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 0.75rem; width: 100%; transition: all 0.2s; }
-        .form-input:focus { border-color: #facc15; box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.4); outline: none; }
-        .wizard-container { background-color: #fff; border-radius: 1.5rem; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); width: 100%; max-width: 56rem; padding: 2rem; transition: all 0.3s ease-in-out; }
-        .wizard-progress-bar { display: flex; align-items: center; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid #e5e7eb; }
-        .wizard-progress-step { flex: 1; text-align: center; color: #6b7280; font-weight: 600; position: relative; }
-        .wizard-progress-dot { height: 2rem; width: 2rem; margin: 0 auto; border-radius: 9999px; border: 2px solid #e5e7eb; background-color: #fff; color: #6b7280; display: flex; align-items: center; justify-content: center; transition: all 0.3s; position: relative; z-index: 2; font-weight: 700; }
-        .wizard-progress-step.active .wizard-progress-dot, .wizard-progress-step.completed .wizard-progress-dot { border-color: #f59e0b; background-color: #f59e0b; color: white; transform: scale(1.1); }
-        .wizard-progress-label { margin-top: 0.75rem; font-size: 0.8rem; }
-        .wizard-progress-line { position: absolute; height: 2px; width: 100%; background: #e5e7eb; top: 1rem; transform: translateY(-50%); left: -50%; z-index: 1; }
-        .wizard-progress-step:first-child .wizard-progress-line { display: none; }
-        .wizard-progress-step.completed .wizard-progress-line { background: #f59e0b; }
-        .upload-slot { position: relative; width: 100%; aspect-ratio: 1 / 1; border: 2px dashed #d1d5db; border-radius: 0.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #a0aec0; cursor: pointer; background-color: #f7fafc; overflow: hidden; }
-        .upload-slot:hover { border-color: #facc15; }
-        .upload-slot img { width: 100%; height: 100%; object-fit: cover; }
-        .mrp-example { color: #6b7280; font-size: 0.8rem; margin-top: -0.5rem; padding-left: 0.25rem; }
-        .mrp-example .strike { text-decoration: line-through; color: #ef4444; }
-        .mrp-example .final-price { color: #16a34a; font-weight: 600; }
-        .ai-suggestion-box { background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 0.5rem; padding: 0.75rem; margin-top: 1rem; display: flex; align-items: center; }
-        .review-section { margin-bottom: 1.5rem; }
-        .review-label { font-weight: 600; color: #4b5563; }
-        .review-value { color: #1f2937; }
-        details > summary { list-style: none; cursor: pointer; font-weight: 600; font-size: 1.125rem; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; display: flex; justify-content: space-between; align-items: center;}
-        details > summary::-webkit-details-marker { display: none; }
-        details[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
-        details .details-content { padding: 1.5rem; border: 1px solid #e5e7eb; border-top: 0; border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem; }
-        details > summary .arrow { transition: transform 0.2s; }
-        details[open] > summary .arrow { transform: rotate(180deg); }
-        .tooltip { position: relative; display: inline-block; }
-        .tooltip .tooltiptext { visibility: hidden; width: 220px; background-color: #333; color: #fff; text-align: center; border-radius: 6px; padding: 8px; position: absolute; z-index: 1; bottom: 125%; left: 50%; margin-left: -110px; opacity: 0; transition: opacity 0.3s; font-size: 0.8rem; font-weight: 500;}
-        .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
-        .voice-input-container { position: relative; width: 100%; }
-        .voice-input-container textarea { padding-right: 2.5rem; }
-        .voice-input-icon { position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); cursor: pointer; color: #6b7280; }
-        .voice-input-icon:hover { color: #1f2937; }
-    </style>
-</head>
-<body>
-    <div id="app-container">
-        <div id="view-product-wizard">
-             <div class="min-h-screen flex items-center justify-center px-4 py-12 bg-yellow-100">
-                <div class="wizard-container">
-                    <div id="wizard-steps-wrapper">
-                        <div class="wizard-progress-bar">
-                            <div id="wp-step-1" class="wizard-progress-step"><div class="wizard-progress-dot">1</div><div class="wizard-progress-label">Images</div></div>
-                            <div id="wp-step-2" class="wizard-progress-step"><div class="wizard-progress-dot">2<div class="wizard-progress-line"></div></div><div class="wizard-progress-label">AI Polish</div></div>
-                            <div id="wp-step-3" class="wizard-progress-step"><div class="wizard-progress-dot">3<div class="wizard-progress-line"></div></div><div class="wizard-progress-label">Details</div></div>
-                            <div id="wp-step-4" class="wizard-progress-step"><div class="wizard-progress-dot">4<div class="wizard-progress-line"></div></div><div class="wizard-progress-label">Pricing</div></div>
-                            <div id="wp-step-5" class="wizard-progress-step"><div class="wizard-progress-dot">5<div class="wizard-progress-line"></div></div><div class="wizard-progress-label">Review</div></div>
-                        </div>
+import express from "express";
+import dotenv from "dotenv";
+import cors from "cors";
+import OpenAI from "openai";
+import multer from "multer";
+import sharp from "sharp";
+import { MongoClient, ObjectId, GridFSBucket } from "mongodb";
+import { Readable } from "stream";
 
-                        <div id="wizard-step-1-content">
-                            <h2 class="text-3xl font-bold text-center mb-2">List a New Product</h2>
-                            <p class="text-center text-gray-600 mb-6">Start by uploading 4 clear photos of your product.</p>
-                            <div class="flex justify-center gap-4 mb-6 text-xs text-center">
-                                <div><img src="https://i.imgur.com/Uf24T4N.png" class="w-20 h-20 rounded border-2 border-green-400"><span class="font-semibold text-green-600">✓ Correct</span></div>
-                                <div><img src="https://i.imgur.com/uTyA1u3.png" class="w-20 h-20 rounded border-2 border-red-400"><span class="font-semibold text-red-600">✗ Incorrect</span></div>
-                            </div>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="image-upload-slots"></div>
-                            <input id="file-upload-wizard" type="file" class="hidden" accept="image/*" multiple>
-                            <p id="wizard-upload-status" class="text-center text-sm font-semibold mt-4 h-5 text-red-600"></p>
-                            <div class="mt-8 pt-6 border-t flex justify-end"><button id="wizard-step1-next" class="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-2 px-5 rounded-lg shadow disabled:bg-gray-300" disabled>Next →</button></div>
-                        </div>
-                        
-                        <div id="wizard-step-2-content" class="hidden">
-                            <div id="ai-image-loader" class="text-center py-12"><div role="status"><svg aria-hidden="true" class="inline w-10 h-10 text-gray-200 animate-spin fill-yellow-400" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/><path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0492C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5424 39.6781 93.9676 39.0409Z" fill="currentFill"/></svg></div><h2 class="text-2xl font-bold text-center mt-4">Our AI is polishing your images... ✨</h2><p class="text-center text-gray-600">Removing backgrounds & correcting colors.</p></div>
-                            <div id="ai-image-results" class="hidden"><h2 class="text-3xl font-bold text-center mb-2">Approve Enhanced Image</h2><p class="text-center text-gray-600 mb-8">We've enhanced your primary image. Please approve to continue.</p><div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center"><div class="text-center"><h4 class="font-bold mb-2">Before</h4><img id="image-before" src="" class="rounded-lg shadow-md w-full"></div><div class="text-center"><h4 class="font-bold mb-2">After (AI Enhanced)</h4><img id="image-after" src="" class="rounded-lg shadow-md w-full"></div></div><div class="mt-6 text-center"><label class="inline-flex items-center"><input id="approve-images-check" type="checkbox" class="h-5 w-5 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500"><span class="ml-2 text-gray-700 font-semibold">I approve the enhanced images.</span></label></div><div class="mt-8 pt-6 border-t flex justify-between"><button id="wizard-step2-back" class="bg-gray-200 hover:bg-gray-300 font-semibold py-2 px-5 rounded-lg">← Back</button><button id="wizard-step2-next" class="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-2 px-5 rounded-lg shadow disabled:bg-gray-300" disabled>Next →</button></div></div>
-                        </div>
-                        
-                        <div id="wizard-step-3-content" class="hidden">
-                             <h2 class="text-3xl font-bold text-center mb-2">Product Details</h2><p class="text-center text-gray-600 mb-8">Review the AI-generated details and add specifics.</p>
-                             <form id="detailsForm" class="space-y-4">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div><label class="font-medium" for="title">Product Title</label><input type="text" id="title" required class="form-input mt-1"></div>
-                                    <div><label class="font-medium" for="category">Category</label><select id="category" required class="form-input mt-1 bg-white"><option value="">Select Category</option><option>Home Decor</option><option>Furniture</option><option>Kitchenware</option></select></div>
-                                </div>
-                                <div>
-                                    <label class="font-medium" for="features">Key Features (1 per line)</label>
-                                    <div class="voice-input-container mt-1">
-                                        <textarea id="features" rows="3" required class="form-input" placeholder="Feature 1&#10;Feature 2&#10;Feature 3"></textarea>
-                                        <div class="voice-input-icon" onclick="alert('Voice-to-Text feature will be activated here!')">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div><label class="font-medium" for="size-variants">Size Variants? (comma-separated)</label><input type="text" id="size-variants" class="form-input mt-1" placeholder="e.g., Small, Medium, Large"></div>
-                                    <div><label class="font-medium" for="keywords">Search Keywords (comma-separated)</label><input type="text" id="keywords" required class="form-input mt-1" placeholder="e.g., wooden tray, serving platter"></div>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div><label class="font-medium" for="material">Material</label><input type="text" id="material" required class="form-input mt-1" placeholder="e.g., Mango Wood"></div>
-                                    <div><label class="font-medium" for="color">Color Variant</label><input type="text" id="color" required class="form-input mt-1" placeholder="e.g., Natural Brown"></div>
-                                    <div>
-                                        <label class="font-medium flex items-center" for="hsn-code">HSN Code 
-                                            <div class="tooltip ml-2">
-                                                <span class="bg-gray-200 text-gray-600 rounded-full h-4 w-4 flex items-center justify-center text-xs font-bold">?</span>
-                                                <span class="tooltiptext">HSN code is a 6-digit code for classifying goods for GST purposes. If unsure, search online for your product category.</span>
-                                            </div>
-                                        </label>
-                                        <input type="text" id="hsn-code" required class="form-input mt-1" placeholder="6 or 8-digit code">
-                                    </div>
-                                </div>
-                                <div class="mt-8 pt-6 border-t flex justify-between"><button type="button" id="wizard-step3-back" class="bg-gray-200 hover:bg-gray-300 font-semibold py-2 px-5 rounded-lg">← Back</button><button type="submit" class="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-2 px-5 rounded-lg shadow">Next →</button></div>
-                            </form>
-                        </div>
+dotenv.config();
 
-                        <div id="wizard-step-4-content" class="hidden">
-                             <h2 class="text-3xl font-bold text-center mb-2">Pricing & Policies</h2><p class="text-center text-gray-600 mb-8">Set your price, stock, and policies.</p>
-                             <form id="pricingForm" class="space-y-6">
-                                <div class="border p-4 rounded-lg bg-yellow-50">
-                                    <h3 class="font-semibold text-lg mb-4">Individual Pricing *</h3>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                                        <div><label class="font-medium" for="mrp">MRP (₹)</label><input type="number" id="mrp" required class="form-input mt-1" placeholder="e.g., 2999"></div>
-                                        <div><label class="font-medium" for="sellingPrice">Your Selling Price (₹)</label><input type="number" id="sellingPrice" required class="form-input mt-1" placeholder="e.g., 1499"></div>
-                                    </div>
-                                    <div class="mrp-example mt-2" id="mrp-example-text"></div>
-                                    <div class="ai-suggestion-box">
-                                        <span class="text-2xl mr-3">💡</span>
-                                        <div><p class="font-semibold text-green-800">AI Price Suggestion</p><p class="text-sm text-green-700">To be competitive, we suggest a price around **₹1499**.</p></div>
-                                    </div>
-                                </div>
-                                <details id="group-buy-details" class="space-y-4">
-                                    <summary>Group Buy Pricing (Optional)<span class="arrow">▼</span></summary>
-                                    <div class="details-content space-y-4">
-                                        <label class="flex items-center"><input type="checkbox" id="enable-group-buy" class="h-4 w-4 rounded"><span class="ml-2">Enable Group Buy for this product</span></label>
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div><label class="font-medium" for="group-buy-price">Group Buy Price (per item)</label><input type="number" id="group-buy-price" class="form-input mt-1" placeholder="e.g. 1299"></div>
-                                            <div><label class="font-medium" for="group-buy-moq">Group Buy MOQ</label><input type="number" id="group-buy-moq" class="form-input mt-1" placeholder="e.g., 5"></div>
-                                        </div>
-                                    </div>
-                                </details>
-                                <details id="wholesale-details" class="space-y-4">
-                                    <summary>Wholesale Pricing (Optional)<span class="arrow">▼</span></summary>
-                                    <div class="details-content space-y-4">
-                                        <label class="flex items-center"><input type="checkbox" id="enable-wholesale" class="h-4 w-4 rounded"><span class="ml-2">Enable Wholesale for this product</span></label>
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div><label class="font-medium" for="wholesale-price">Wholesale Price (per item)</label><input type="number" id="wholesale-price" class="form-input mt-1" placeholder="e.g. 999"></div>
-                                            <div><label class="font-medium" for="wholesale-moq">Wholesale MOQ</label><input type="number" id="wholesale-moq" class="form-input mt-1" placeholder="e.g., 20"></div>
-                                        </div>
-                                    </div>
-                                </details>
-                                <details id="inventory-details" class="space-y-4" open>
-                                    <summary>Inventory & Policies *<span class="arrow">▼</span></summary>
-                                    <div class="details-content grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div><label class="font-medium" for="stock">Total Stock Quantity *</label><input type="number" id="stock" required class="form-input mt-1" placeholder="e.g., 100"></div>
-                                        <div>
-                                            <label class="font-medium" for="return-policy">Return Policy *</label>
-                                            <select id="return-policy" required class="form-input mt-1 bg-white">
-                                                <option value="" disabled selected>Select a policy</option>
-                                                <option value="non-returnable">Non-Returnable</option>
-                                                <option value="7-day-defect-only">7-Day Return (Defects Only)</option>
-                                                <option value="10-day-exchange">10-Day Exchange</option>
-                                                <option value="15-day-full-refund">15-Day Full Refund</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </details>
-                                <div class="mt-8 pt-6 border-t flex justify-between"><button type="button" id="wizard-step4-back" class="bg-gray-200 hover:bg-gray-300 font-semibold py-2 px-5 rounded-lg">← Back</button><button type="submit" class="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-2 px-5 rounded-lg shadow">Next →</button></div>
-                            </form>
-                        </div>
-                        
-                        <div id="wizard-step-5-content" class="hidden">
-                             <h2 class="text-3xl font-bold text-center mb-2">Review & Submit</h2><p class="text-center text-gray-600 mb-8">Please review all details before submitting your product.</p>
-                             <div class="space-y-6">
-                                <div class="review-section"><h3 class="text-lg font-semibold border-b pb-2 mb-3">Product Images</h3><div id="review-images" class="grid grid-cols-4 gap-4"></div></div>
-                                <div class="review-section"><h3 class="text-lg font-semibold border-b pb-2 mb-3">Product Details</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm"><div><span class="review-label">Title:</span> <span id="review-title" class="review-value"></span></div><div><span class="review-label">Category:</span> <span id="review-category" class="review-value"></span></div><div><span class="review-label">Material:</span> <span id="review-material" class="review-value"></span></div><div><span class="review-label">Color:</span> <span id="review-color" class="review-value"></span></div><div><span class="review-label">HSN Code:</span> <span id="review-hsn-code" class="review-value"></span></div><div><span class="review-label">Size Variants:</span> <span id="review-size-variants" class="review-value"></span></div></div><div class="mt-2"><span class="review-label">Keywords:</span> <span id="review-keywords" class="review-value text-sm"></span></div><div class="mt-2"><span class="review-label">Key Features:</span><ul id="review-features" class="list-disc list-inside review-value text-sm"></ul></div></div>
-                                <div class="review-section"><h3 class="text-lg font-semibold border-b pb-2 mb-3">Pricing & Policies</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm"><div><span class="review-label">MRP:</span> <span id="review-mrp" class="review-value"></span></div><div><span class="review-label">Selling Price:</span> <span id="review-selling-price" class="review-value font-bold text-green-600"></span></div><div><span class="review-label">Stock:</span> <span id="review-stock" class="review-value"></span></div><div><span class="review-label">Return Policy:</span> <span id="review-return-policy" class="review-value"></span></div><div id="review-group-buy-container" class="hidden"><span class="review-label">Group Buy Price:</span> <span id="review-group-buy-price" class="review-value"></span></div><div id="review-wholesale-container" class="hidden"><span class="review-label">Wholesale Price:</span> <span id="review-wholesale-price" class="review-value"></span></div></div></div>
-                            </div>
-                             <div class="mt-8 pt-6 border-t flex justify-between"><button type="button" id="wizard-step5-back" class="bg-gray-200 hover:bg-gray-300 font-semibold py-2 px-5 rounded-lg">← Back</button><button type="button" id="wizard-submit-btn" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-5 rounded-lg shadow">Submit Listing ✅</button></div>
-                        </div>
-                    </div>
-                    
-                    <div id="wizard-step-6-success" class="hidden">
-                        <div class="text-center py-12">
-                            <h2 class="text-4xl font-bold text-green-600 mb-4">Shabaash!</h2>
-                            <p class="text-xl text-gray-700 mb-2">Aapka product safaltapoorvak list ho gaya hai.</p>
-                            <p class="text-gray-500 mb-8">Verification ke baad yeh buyers ko dikhne lagega.</p>
-                            <div class="p-4 bg-yellow-100 rounded-lg">
-                                <h3 class="font-bold text-yellow-800">Your First Badge Unlocked! 🏅</h3>
-                                <p class="text-sm text-yellow-700">"Pehli Udaan" badge aapke profile mein add ho gaya hai.</p>
-                            </div>
-                            <div class="mt-8 flex justify-center gap-4">
-                                <button class="bg-gray-800 hover:bg-black text-white font-semibold py-2 px-5 rounded-lg">List Another Product</button>
-                                <button class="bg-gray-200 hover:bg-gray-300 font-semibold py-2 px-5 rounded-lg">Go to Dashboard</button>
-                            </div>
-                        </div>
-                    </div>
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-                </div>
-             </div>
-        </div>
-    </div>
-    <script>
-        function triggerConfetti() {
-            confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
-        }
+// API key check ko yahan add kiya gaya hai
+if (!process.env.OPENAI_API_KEY) {
+    console.error("❌ The OPENAI_API_KEY environment variable is missing or invalid.");
+    // Optionally, exit the application if the key is critical
+    // process.exit(1);
+}
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const client = new MongoClient(process.env.MONGODB_URI);
 
-        document.addEventListener('DOMContentLoaded', () => {
-            // STATE & ELEMENT REFERENCES
-            const appState = { currentView: 'wizard', wizardStep: 1 };
-            const productData = { images: new Array(4).fill(null) };
-            const views = { wizard: document.getElementById('view-product-wizard') };
-            const wizardWrapper = document.getElementById('wizard-steps-wrapper');
-            const successScreen = document.getElementById('wizard-step-6-success');
-            const wizardStepContents = { 1: document.getElementById('wizard-step-1-content'), 2: document.getElementById('wizard-step-2-content'), 3: document.getElementById('wizard-step-3-content'), 4: document.getElementById('wizard-step-4-content'), 5: document.getElementById('wizard-step-5-content') };
-            const wizardFileInput = document.getElementById('file-upload-wizard');
-            const wizardSlotsContainer = document.getElementById('image-upload-slots');
-            
-            // RENDER FUNCTION
-            function render() {
-                Object.values(views).forEach(view => view.classList.add('hidden'));
-                if (views[appState.currentView]) views[appState.currentView].classList.remove('hidden');
-                if (appState.currentView === 'wizard' && !successScreen.classList.contains('hidden')) {
-                    wizardWrapper.classList.add('hidden');
-                } else if (appState.currentView === 'wizard') {
-                    wizardWrapper.classList.remove('hidden');
-                    successScreen.classList.add('hidden');
-                    for (let i = 1; i <= 5; i++) {
-                        const stepEl = document.getElementById(`wp-step-${i}`); if (!stepEl) continue;
-                        stepEl.classList.remove('active', 'completed');
-                        const dotEl = stepEl.querySelector('.wizard-progress-dot');
-                        if (i < appState.wizardStep) { stepEl.classList.add('completed'); dotEl.innerHTML = `&#10003;`; } 
-                        else if (i === appState.wizardStep) { stepEl.classList.add('active'); dotEl.textContent = i; } 
-                        else { dotEl.textContent = i; }
-                    }
-                    Object.values(wizardStepContents).forEach(content => content.classList.add('hidden'));
-                    if(wizardStepContents[appState.wizardStep]) wizardStepContents[appState.wizardStep].classList.remove('hidden');
-                }
-            }
+let db, chats, bucket;
+async function connectToMongo() {
+  try {
+    await client.connect();
+    db = client.db();
+    chats = db.collection("chats");
+    bucket = new GridFSBucket(db, { bucketName: "uploads" });
+    console.log("✅ Connected to MongoDB");
+  } catch (err) {
+    console.error("❌ MongoDB connection error:", err);
+  }
+}
+connectToMongo();
 
-            // WIZARD STEP 1: IMAGES
-            const renderWizardSlots = () => {
-                wizardSlotsContainer.innerHTML = '';
-                productData.images.forEach((file, index) => {
-                    const slot = document.createElement('div'); slot.className = 'upload-slot';
-                    if (file) { slot.innerHTML = `<img src="${URL.createObjectURL(file)}">`; } 
-                    else { slot.innerHTML = `<div><span class="text-4xl text-gray-400">+</span><span class="block text-xs mt-1 font-semibold text-gray-500">${index === 0 ? 'Main Image' : `Image ${index + 1}`}</span></div>`; slot.onclick = () => wizardFileInput.click(); }
-                    wizardSlotsContainer.appendChild(slot);
-                });
-                const filledSlots = productData.images.filter(f => f !== null).length;
-                document.getElementById('wizard-step1-next').disabled = filledSlots < 4;
-                document.getElementById('wizard-upload-status').textContent = filledSlots < 4 ? `Please upload ${4 - filledSlots} more image(s).` : '';
-            };
-            wizardFileInput.addEventListener('change', (e) => {
-                const files = Array.from(e.target.files); let filesAdded = 0;
-                for (let i = 0; i < productData.images.length && filesAdded < files.length; i++) { if (productData.images[i] === null) productData.images[i] = files[filesAdded++]; }
-                renderWizardSlots();
-            });
-            document.getElementById('wizard-step1-next').addEventListener('click', () => {
-                appState.wizardStep = 2; render();
-                document.getElementById('ai-image-loader').style.display = 'block'; document.getElementById('ai-image-results').style.display = 'none';
-                setTimeout(() => {
-                    document.getElementById('image-before').src = URL.createObjectURL(productData.images[0]);
-                    document.getElementById('image-after').src = 'https://googleusercontent.com/file_content/-8';
-                    document.getElementById('ai-image-loader').style.display = 'none'; document.getElementById('ai-image-results').style.display = 'block';
-                }, 2500);
-            });
-
-            // WIZARD STEP 2: AI POLISH
-            document.getElementById('wizard-step2-back').addEventListener('click', () => { appState.wizardStep = 1; render(); });
-            document.getElementById('approve-images-check').addEventListener('change', (e) => { document.getElementById('wizard-step2-next').disabled = !e.target.checked; });
-            document.getElementById('wizard-step2-next').addEventListener('click', () => {
-                 appState.wizardStep = 3; render();
-                 setTimeout(() => {
-                    document.getElementById('title').value = "Hand-Carved Wooden Elephant Statue"; document.getElementById('features').value = "Handmade by skilled artisans\nMade from sustainable Mango Wood\nPerfect for home decor and gifts"; document.getElementById('keywords').value = "wooden elephant, handmade statue, rajasthani handicraft"; document.getElementById('material').value = "Mango Wood"; document.getElementById('color').value = "Natural Brown"; document.getElementById('hsn-code').value = "44201000";
-                 }, 500);
-            });
-
-            // WIZARD STEP 3: DETAILS
-            document.getElementById('wizard-step3-back').addEventListener('click', () => { appState.wizardStep = 2; render(); });
-            document.getElementById('detailsForm').addEventListener('submit', (e) => {
-                e.preventDefault();
-                Object.assign(productData, { title: document.getElementById('title').value, category: document.getElementById('category').value, features: document.getElementById('features').value, keywords: document.getElementById('keywords').value, material: document.getElementById('material').value, color: document.getElementById('color').value, hsnCode: document.getElementById('hsn-code').value, sizeVariants: document.getElementById('size-variants').value });
-                appState.wizardStep = 4; render();
-            });
-
-            // WIZARD STEP 4: PRICING
-            const mrpInput = document.getElementById('mrp'); const sellingPriceInput = document.getElementById('sellingPrice'); const exampleText = document.getElementById('mrp-example-text');
-            function updateMrpExample() { const mrp = mrpInput.value || '0'; const sp = sellingPriceInput.value || '0'; exampleText.innerHTML = `Example: <span class="strike">₹${mrp}</span> <span class="final-price">₹${sp}</span>`; }
-            mrpInput.addEventListener('input', updateMrpExample); sellingPriceInput.addEventListener('input', updateMrpExample);
-            document.getElementById('wizard-step4-back').addEventListener('click', () => { appState.wizardStep = 3; render(); });
-            document.getElementById('pricingForm').addEventListener('submit', (e) => {
-                e.preventDefault();
-                const pricingData = { mrp: document.getElementById('mrp').value, sellingPrice: document.getElementById('sellingPrice').value, stock: document.getElementById('stock').value, returnPolicy: document.getElementById('return-policy').value };
-                if (document.getElementById('enable-group-buy').checked) { pricingData.groupBuyPrice = document.getElementById('group-buy-price').value; pricingData.groupBuyMoq = document.getElementById('group-buy-moq').value; }
-                if (document.getElementById('enable-wholesale').checked) { pricingData.wholesalePrice = document.getElementById('wholesale-price').value; pricingData.wholesaleMoq = document.getElementById('wholesale-moq').value; }
-                Object.assign(productData, pricingData);
-                appState.wizardStep = 5;
-                populateReviewPage();
-                render();
-            });
-
-            // WIZARD STEP 5: REVIEW
-            document.getElementById('wizard-step5-back').addEventListener('click', () => { appState.wizardStep = 4; render(); });
-            const wizardSubmitBtn = document.getElementById('wizard-submit-btn');
-            wizardSubmitBtn.addEventListener('click', () => {
-                console.log("Final Product Data:", productData);
-                wizardWrapper.classList.add('hidden');
-                successScreen.classList.remove('hidden');
-                triggerConfetti();
-            });
-            function populateReviewPage() {
-                document.getElementById('review-images').innerHTML = productData.images.map(file => file ? `<img src="${URL.createObjectURL(file)}" class="w-full h-auto rounded-md object-cover">` : '').join('');
-                document.getElementById('review-title').textContent = productData.title; document.getElementById('review-category').textContent = productData.category; document.getElementById('review-material').textContent = productData.material; document.getElementById('review-color').textContent = productData.color; document.getElementById('review-hsn-code').textContent = productData.hsnCode; document.getElementById('review-size-variants').textContent = productData.sizeVariants || 'N/A';
-                const featuresList = document.getElementById('review-features');
-                featuresList.innerHTML = ''; productData.features.split('\n').forEach(feature => { if (feature.trim()) { const li = document.createElement('li'); li.textContent = feature.trim(); featuresList.appendChild(li); } });
-                document.getElementById('review-mrp').textContent = `₹${productData.mrp}`; document.getElementById('review-selling-price').textContent = `₹${productData.sellingPrice}`; document.getElementById('review-stock').textContent = `${productData.stock} units`;
-                document.getElementById('review-return-policy').textContent = productData.returnPolicy;
-                const groupBuyContainer = document.getElementById('review-group-buy-container');
-                if (productData.groupBuyPrice) { groupBuyContainer.classList.remove('hidden'); document.getElementById('review-group-buy-price').textContent = `₹${productData.groupBuyPrice} (MOQ: ${productData.groupBuyMoq})`; } else { groupBuyContainer.classList.add('hidden'); }
-                const wholesaleContainer = document.getElementById('review-wholesale-container');
-                if (productData.wholesalePrice) { wholesaleContainer.classList.remove('hidden'); document.getElementById('review-wholesale-price').textContent = `₹${productData.wholesalePrice} (MOQ: ${productData.wholesaleMoq})`; } else { wholesaleContainer.classList.add('hidden'); }
-            }
-
-            // INITIALIZER
-            render();
-            renderWizardSlots();
-            updateMrpExample();
-        });
-    </script>
-
-<script>
-const apiBase = "https://banjara-gpt.onrender.com";
-
-document.addEventListener("DOMContentLoaded", () => {
-  const fileInput = document.querySelector('input[name="mainImage1"]') || document.querySelector('#mainImage1');
-  const statusEl = document.createElement("div");
-  statusEl.style.fontStyle = "italic";
-  statusEl.style.color = "#555";
-  fileInput?.insertAdjacentElement("afterend", statusEl);
-
-  fileInput?.addEventListener("change", async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    statusEl.textContent = "Analyzing image with GPT...";
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const res = await fetch(`${apiBase}/upload-listing-image`, {
-        method: "POST",
-        body: formData
-      });
-      const data = await res.json();
-
-      document.getElementById("title")?.value = data.title || "";
-      document.getElementById("material")?.value = data.material || "";
-      document.getElementById("color")?.value = data.color || "";
-      document.getElementById("features")?.value = (data.features || []).join("\n");
-      document.getElementById("keywords")?.value = (data.keywords || []).join(", ");
-      document.getElementById("hsn")?.value = data.hsn || "";
-
-      statusEl.textContent = "✅ Auto-filled by GPT.";
-    } catch (err) {
-      console.error(err);
-      statusEl.textContent = "❌ GPT backend error.";
-    }
-  });
+// Home route
+app.get("/", (req, res) => {
+  res.send("👋 Welcome to BanjaraGPT API! The server is live.");
 });
-</script>
 
-</body>
-</html>
+// Get all chats (sidebar)
+app.get("/chats", async (req, res) => {
+  try {
+    const all = await chats.find({}, { projection: { messages: 0 } }).toArray();
+    res.json(all.map(c => ({ id: c._id.toString(), title: c.title || "Untitled" })));
+  } catch {
+    res.status(500).json({ error: "Failed to fetch chats" });
+  }
+});
+
+// Load a single chat
+app.get("/chat/:id", async (req, res) => {
+  try {
+    const chat = await chats.findOne({ _id: new ObjectId(req.params.id) });
+    if (!chat) return res.status(404).json({ error: "Chat not found" });
+    res.json({ messages: chat.messages || [] });
+  } catch {
+    res.status(400).json({ error: "Invalid chat ID" });
+  }
+});
+
+// Create a new chat
+app.post("/chat/new", async (req, res) => {
+  try {
+    const chat = { title: "New Chat", messages: [] };
+    const result = await chats.insertOne(chat);
+    res.json({ id: result.insertedId.toString(), title: chat.title });
+  } catch {
+    res.status(500).json({ error: "Failed to create chat" });
+  }
+});
+
+// Chat message route
+app.post("/chat/:id", async (req, res) => {
+  const { message } = req.body;
+  if (!message) return res.status(400).json({ error: "Message is required" });
+
+  try {
+    const chat = await chats.findOne({ _id: new ObjectId(req.params.id) });
+    if (!chat) return res.status(404).json({ error: "Chat not found" });
+
+    const systemPrompt = `
+You are BanjaraGPT, the personal assistant and business command center for Banjara Bazaar, created by Vinod Kumar.
+
+Your voice is warm, clear, and engaging. You always communicate like a smart, loyal business companion, not a robot.
+
+Your personality adapts to the user's needs:
+- 🎨 For Instagram captions: You write catchy, scroll-stopping lines.
+- 🧑‍💻 In technical mode: You explain and write clean, working code.
+- 🛍️ For sellers and team: You assist with product listings, orders, and logistics.
+
+You know Banjara Bazaar connects customers directly to India’s top manufacturers, offering factory-direct prices and group-buy deals.
+    `;
+
+    const history = chat.messages.slice(-10);
+    const messages = [
+      { role: "system", content: systemPrompt },
+      ...history.map(m => ({
+        role: m.sender === "user" ? "user" : "assistant",
+        content: m.text,
+      })),
+      { role: "user", content: message },
+    ];
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages,
+    });
+
+    const reply = completion.choices[0].message.content;
+    const now = new Date();
+
+    await chats.updateOne(
+      { _id: new ObjectId(req.params.id) },
+      {
+        $push: {
+          messages: {
+            $each: [
+              { sender: "user", text: message, timestamp: now },
+              { sender: "bot", text: reply, timestamp: now },
+            ],
+          },
+        },
+      }
+    );
+
+    res.json({ reply });
+  } catch (err) {
+    console.error("❌ OpenAI error:", err);
+    res.status(500).json({ error: "OpenAI error" });
+  }
+});
+
+// Upload listing image (with compression)
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
+app.post("/upload-listing-image", upload.single("file"), async (req, res) => {
+  try {
+    const originalBuffer = req.file.buffer;
+
+    // Compress image before sending to GPT
+    const compressedBuffer = await sharp(originalBuffer)
+      .resize(800, 800, { fit: "inside" })
+      .jpeg({ quality: 80 })
+      .toBuffer();
+
+    // Upload to GridFS
+    const uploadStream = bucket.openUploadStream(req.file.originalname);
+    Readable.from(compressedBuffer).pipe(uploadStream);
+
+    uploadStream.on("finish", async () => {
+      const fileId = uploadStream.id.toString();
+
+      const base64 = compressedBuffer.toString("base64");
+      const imageData = `data:image/jpeg;base64,${base64}`;
+
+      // Prompt ko update kiya gaya hai takay description bhi generate ho
+      const prompt = `
+You are an expert product listing assistant for a home decor and lifestyle ecommerce platform called Banjara Bazaar®. Your job is to enhance any uploaded product image and auto-fill seller-friendly product details based on visual cues — no category input needed.
+
+✨ Step 1: Visually polish the product image
+- Remove background and replace with a soft gray studio-style backdrop
+- Add soft, natural shadows beneath and around the product for depth
+- Improve lighting, sharpness, and clarity to highlight craftsmanship
+- For reflective products (mirrors, glassware, etc.): ensure a realistic reflective surface with natural light highlights
+- Preserve original color, material, size, and proportions — do not modify design or add props
+
+🧠 Step 2: Analyze the image and auto-fill listing details
+Return the following in plain text (no markdown):
+
+Title: 1-line name (max 10 words)
+Description: 3-5 sentences describing the product, its craftsmanship, and its use case.
+Material:
+Color:
+Features:
+- Bullet 1
+- Bullet 2
+- Bullet 3
+SEO Keywords: (comma-separated)
+HSN Code:
+🛑 Be visually accurate. Avoid exaggeration or assumptions.
+`;
+
+      const visionResponse = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: prompt,
+          },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Here's the product image:" },
+              { type: "image_url", image_url: { url: imageData } },
+            ],
+          },
+        ],
+        max_tokens: 1000,
+      });
+
+      const listing = visionResponse.choices[0].message.content;
+      res.json({ listing, fileId });
+    });
+  } catch (err) {
+    // 500 error ko yahan par catch kiya gaya hai
+    console.error("❌ Upload error:", err);
+    res.status(500).json({ error: "OpenAI error or file upload issue" });
+  }
+});
+
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`✅ BanjaraGPT server running at http://localhost:${PORT}`);
+});
